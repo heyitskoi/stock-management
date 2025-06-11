@@ -6,3 +6,4 @@ alembic
 python-dotenv
 python-jose[cryptography]
 passlib
+python-multipart

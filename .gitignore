@@ -8,3 +8,5 @@ venv/
 
 # Node modules
 frontend/node_modules/
+local.db
+backend/local.db

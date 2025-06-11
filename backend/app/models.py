@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -49,6 +49,7 @@ class StockItem(Base):
     quantity = Column(Integer, default=0)
     department_id = Column(Integer, ForeignKey("departments.id"))
     company_id = Column(Integer, ForeignKey("companies.id"), index=True)
+    is_faulty = Column(Boolean, default=False)
 
     department = relationship("Department")
     company = relationship("Company")
