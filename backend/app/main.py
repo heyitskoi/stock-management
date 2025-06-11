@@ -7,17 +7,20 @@ from datetime import datetime, timedelta
 from . import auth
 from .database import Base, engine, get_db
 from .models import Department, StockItem, StockHistory, Assignment, User
+from .audit import router as audit_router
 from .schemas import (
     StockAddRequest,
     StockAssignRequest,
     StockReturnRequest,
     StockFaultyRequest,
     StockTransferRequest,
+    ParLevelUpdateRequest,
     StockItemResponse,
     StockHistoryResponse,
 )
 
 app = FastAPI(title="Stock Management System")
+app.include_router(audit_router)
 
 
 @app.on_event("startup")
@@ -87,6 +90,7 @@ def add_stock(
                 user_id=current_user.id,
                 company_id=current_user.company_id,
                 action="add",
+                reason=payload.reason,
             )
         )
     else:
@@ -106,6 +110,7 @@ def add_stock(
                 user_id=current_user.id,
                 company_id=current_user.company_id,
                 action="create",
+                reason=payload.reason,
             )
         )
     db.commit()
@@ -151,6 +156,7 @@ def assign_stock(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="assign",
+            reason=payload.reason,
         )
     )
     db.commit()
@@ -183,6 +189,7 @@ def return_stock(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="return",
+            reason=payload.reason,
         )
     )
     db.commit()
@@ -213,6 +220,7 @@ def mark_faulty(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="faulty",
+            reason=payload.reason,
         )
     )
     db.commit()
@@ -265,6 +273,7 @@ def transfer_stock(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="transfer",
+            reason=payload.reason,
         )
     )
     db.commit()
@@ -274,6 +283,7 @@ def transfer_stock(
 @app.post("/stock/delete/{item_id}")
 def delete_stock(
     item_id: int,
+    reason: str | None = None,
     current_user=Depends(auth.require_role("warehouse")),
     db: Session = Depends(get_db),
 ):
@@ -295,10 +305,62 @@ def delete_stock(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="delete",
+            reason=reason,
         )
     )
     db.commit()
     return {"detail": "deleted"}
+
+
+@app.patch("/stock/par-level/{item_id}", response_model=StockItemResponse)
+def update_par_level(
+    item_id: int,
+    payload: ParLevelUpdateRequest,
+    current_user=Depends(auth.require_role("warehouse")),
+    db: Session = Depends(get_db),
+):
+    item = (
+        db.query(StockItem)
+        .filter(
+            StockItem.id == item_id,
+            StockItem.company_id == current_user.company_id,
+            StockItem.is_deleted == False,
+        )
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item.par_level = payload.par_level
+    db.add(
+        StockHistory(
+            stock_item=item,
+            user_id=current_user.id,
+            company_id=current_user.company_id,
+            action="set_par_level",
+        )
+    )
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@app.get("/stock/warnings", response_model=list[StockItemResponse])
+def stock_warnings(
+    current_user=Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    items = (
+        db.query(StockItem)
+        .filter(
+            StockItem.company_id == current_user.company_id,
+            StockItem.is_deleted == False,
+            StockItem.is_faulty == False,
+            StockItem.par_level.isnot(None),
+            StockItem.quantity < StockItem.par_level,
+        )
+        .all()
+    )
+    return items
 
 
 @app.get("/stock", response_model=list[StockItemResponse])
@@ -312,7 +374,7 @@ def view_stock(
     db: Session = Depends(get_db),
 ):
     if user_id is not None:
-        assignments = (
+        assign_q = (
             db.query(Assignment)
             .join(StockItem)
             .filter(
@@ -321,8 +383,10 @@ def view_stock(
                 Assignment.company_id == current_user.company_id,
                 StockItem.is_deleted == False,
             )
-            .all()
         )
+        if department_id is not None:
+            assign_q = assign_q.filter(StockItem.department_id == department_id)
+        assignments = assign_q.all()
         return [a.stock_item for a in assignments]
     q = db.query(StockItem).filter(
         StockItem.company_id == current_user.company_id,
@@ -340,6 +404,25 @@ def view_stock(
     elif status == "ok":
         q = q.filter(StockItem.is_faulty == False)
     return q.all()
+
+
+@app.get("/my-equipment", response_model=list[StockItemResponse])
+def my_equipment(
+    current_user=Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    assignments = (
+        db.query(Assignment)
+        .join(StockItem)
+        .filter(
+            Assignment.assignee_user_id == current_user.id,
+            Assignment.returned_at.is_(None),
+            Assignment.company_id == current_user.company_id,
+            StockItem.is_deleted == False,
+        )
+        .all()
+    )
+    return [a.stock_item for a in assignments]
 
 
 @app.get("/stock/history/{item_id}", response_model=list[StockHistoryResponse])
@@ -360,23 +443,3 @@ def stock_history(
     return history
 
 
-@app.get("/audit/logs", response_model=list[StockHistoryResponse])
-def audit_logs(
-    item_id: int | None = None,
-    user_id: int | None = None,
-    department_id: int | None = None,
-    current_user=Depends(auth.require_role("admin")),
-    db: Session = Depends(get_db),
-):
-    q = (
-        db.query(StockHistory)
-        .join(StockItem)
-        .filter(StockHistory.company_id == current_user.company_id)
-    )
-    if item_id is not None:
-        q = q.filter(StockHistory.stock_item_id == item_id)
-    if user_id is not None:
-        q = q.filter(StockHistory.user_id == user_id)
-    if department_id is not None:
-        q = q.filter(StockItem.department_id == department_id)
-    return q.order_by(StockHistory.timestamp.desc()).all()

@@ -50,10 +50,15 @@ The goal is to:
 
 ## 🧠 Smart Behaviors
 - When **stock runs low**, par levels trigger a restock warning.
+- Use the `/stock/warnings` endpoint to list items below their par levels.
+- Par levels can be updated via `PATCH /stock/par-level/{item_id}`.
 - **Broken items** are marked and excluded from usable counts.
 - **Aging assets** can be tracked by acquisition date.
 - Staff can be assigned specific equipment (e.g., laptops, phones) with full responsibility trail.
 - Reports can be filtered by par levels, age, and faulty status.
+- Users can see their currently issued equipment via `/my-equipment`.
+- The stock listing API also allows filtering results by department or by the user an item is assigned to.
+
 
 ---
 
