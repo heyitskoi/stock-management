@@ -1,7 +1,6 @@
 # Stock Management System – Real-World Vision
 
 ## 🧭 Mission
-
 This is not a typical SaaS app — it's a **real-world stock tracking system** built to solve the practical pains of managing stock across departments, users, and roles in a company.
 
 The goal is to:
@@ -39,17 +38,16 @@ The goal is to:
 
 ## 🔐 Access Control Examples
 
-| Role             | View              | Can Do                                                                 |
-|------------------|-------------------|------------------------------------------------------------------------|
-| `admin`          | Everything         | Manage stock, users, departments, audits                              |
-| `warehouse`      | Warehouse dept     | Reassign stock, mark issues, restock                                  |
-| `tech_support`   | Only own issued items | Return items, view equipment assigned                                |
-| `sales`          | Possibly none      | Can request stock but not manage it directly                         |
+| Role           | View                  | Can Do                                             |
+|----------------|-----------------------|----------------------------------------------------|
+| `admin`        | Everything            | Manage stock, users, departments, audits           |
+| `warehouse`    | Warehouse department  | Reassign stock, mark issues, restock               |
+| `tech_support` | Only own issued items | Return items, view equipment assigned              |
+| `sales`        | Possibly none         | Can request stock but not manage it directly       |
 
 ---
 
 ## 🧠 Smart Behaviors
-
 - When **stock runs low**, par levels trigger a restock warning.
 - **Broken items** are marked and excluded from usable counts.
 - **Aging assets** can be tracked by acquisition date.
@@ -58,7 +56,6 @@ The goal is to:
 ---
 
 ## 💻 System Stack
-
 - **Backend**: FastAPI + SQLAlchemy + Alembic
 - **Frontend**: Next.js + React + shadcn/ui (via V0.dev)
 - **Auth**: JWT + role-based access control
@@ -68,7 +65,6 @@ The goal is to:
 ---
 
 ## 🧪 Examples of Good Codex Tasks
-
 - ✅ "Generate a React dashboard for a warehouse user that lets them reassign stock between users in the same department."
 - ✅ "Create a FastAPI endpoint to issue an item to a user and log the assignment with timestamp and issuer."
 - ✅ "Add a QR code scanning input field to the restock form to auto-fill the item."
@@ -76,24 +72,36 @@ The goal is to:
 ---
 
 ## ❌ Avoid
-
 - ❌ Generic CRUD without context (e.g., “Create product” with no link to department)
 - ❌ Single-tenant assumptions — this system must support multiple companies
 - ❌ Unstructured UI suggestions — all flows should reflect real operational intent
 
 ---
 
-## 🛠️ Setup
+## 🛠️ Local Setup
 
-```bash
-# Backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-alembic upgrade head
-uvicorn app.main:app --reload
+1. **Clone and create a virtual environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r backend/requirements.txt
+   ```
+2. **Environment variables**
+   - Copy `.env.example` to `.env` and adjust values if needed.
+   - `DATABASE_URL` defaults to SQLite (`sqlite:///./local.db`). Use a PostgreSQL URL for production.
+3. **Initialize the database with sample data**
+   ```bash
+   python backend/sample_data.py
+   ```
+4. **Run the backend**
+   ```bash
+   uvicorn app.main:app --reload --app-dir backend
+   ```
+5. **Run the frontend**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-# Frontend
-cd frontend
-npm install
-npm run dev
+This project uses SQLite for convenience during development but is designed to work with PostgreSQL in production.
