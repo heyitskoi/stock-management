@@ -54,6 +54,7 @@ The goal is to:
 - **Aging assets** can be tracked by acquisition date.
 - Staff can be assigned specific equipment (e.g., laptops, phones) with full responsibility trail.
 - Reports can be filtered by par levels, age, and faulty status.
+- The stock listing API also allows filtering results by department or by the user an item is assigned to.
 
 ---
 
