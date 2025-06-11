@@ -52,12 +52,14 @@ def init_db():
         quantity=5,
         department_id=warehouse.id,
         company_id=company.id,
+        par_level=2,
     )
     phone = StockItem(
         name="Phone",
         quantity=3,
         department_id=it.id,
         company_id=company.id,
+        par_level=2,
     )
     db.add_all([laptop, phone])
 

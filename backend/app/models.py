@@ -50,6 +50,9 @@ class StockItem(Base):
     department_id = Column(Integer, ForeignKey("departments.id"))
     company_id = Column(Integer, ForeignKey("companies.id"), index=True)
     is_faulty = Column(Boolean, default=False)
+    par_level = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_deleted = Column(Boolean, default=False)
 
     department = relationship("Department")
     company = relationship("Company")

@@ -33,6 +33,7 @@ The goal is to:
   - Who did it
   - When
   - Why (optional reason/comment)
+- Admins can query audit logs by item, user, or department.
 
 ---
 
@@ -52,6 +53,7 @@ The goal is to:
 - **Broken items** are marked and excluded from usable counts.
 - **Aging assets** can be tracked by acquisition date.
 - Staff can be assigned specific equipment (e.g., laptops, phones) with full responsibility trail.
+- Reports can be filtered by par levels, age, and faulty status.
 
 ---
 

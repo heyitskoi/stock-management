@@ -6,6 +6,7 @@ class StockAddRequest(BaseModel):
     name: str
     quantity: int
     department_id: int
+    par_level: Optional[int] = None
 
 class StockAssignRequest(BaseModel):
     stock_item_id: int
@@ -28,6 +29,8 @@ class StockItemResponse(BaseModel):
     quantity: int
     department_id: int
     is_faulty: bool
+    par_level: Optional[int] = None
+    created_at: datetime
 
     class Config:
         orm_mode = True
