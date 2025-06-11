@@ -311,7 +311,7 @@ def view_stock(
     db: Session = Depends(get_db),
 ):
     if user_id is not None:
-        assignments = (
+        assign_q = (
             db.query(Assignment)
             .join(StockItem)
             .filter(
@@ -320,8 +320,10 @@ def view_stock(
                 Assignment.company_id == current_user.company_id,
                 StockItem.is_deleted == False,
             )
-            .all()
         )
+        if department_id is not None:
+            assign_q = assign_q.filter(StockItem.department_id == department_id)
+        assignments = assign_q.all()
         return [a.stock_item for a in assignments]
     q = db.query(StockItem).filter(
         StockItem.company_id == current_user.company_id,

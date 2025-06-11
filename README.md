@@ -55,6 +55,8 @@ The goal is to:
 - Staff can be assigned specific equipment (e.g., laptops, phones) with full responsibility trail.
 - Reports can be filtered by par levels, age, and faulty status.
 - Users can see their currently issued equipment via `/my-equipment`.
+- The stock listing API also allows filtering results by department or by the user an item is assigned to.
+
 
 ---
 
