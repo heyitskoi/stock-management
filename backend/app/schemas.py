@@ -23,6 +23,9 @@ class StockTransferRequest(BaseModel):
     to_department_id: int
     quantity: int
 
+class ParLevelUpdateRequest(BaseModel):
+    par_level: Optional[int]
+
 class StockItemResponse(BaseModel):
     id: int
     name: str
@@ -31,6 +34,7 @@ class StockItemResponse(BaseModel):
     is_faulty: bool
     par_level: Optional[int] = None
     created_at: datetime
+    below_par: bool
 
     class Config:
         orm_mode = True

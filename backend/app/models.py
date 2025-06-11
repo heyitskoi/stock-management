@@ -57,6 +57,13 @@ class StockItem(Base):
     department = relationship("Department")
     company = relationship("Company")
 
+    @property
+    def below_par(self) -> bool:
+        """Return True if item quantity is below its par level."""
+        if self.par_level is None:
+            return False
+        return self.quantity < self.par_level
+
 
 class StockHistory(Base):
     __tablename__ = "stock_history"

@@ -13,6 +13,7 @@ from .schemas import (
     StockReturnRequest,
     StockFaultyRequest,
     StockTransferRequest,
+    ParLevelUpdateRequest,
     StockItemResponse,
     StockHistoryResponse,
 )
@@ -298,6 +299,57 @@ def delete_stock(
     )
     db.commit()
     return {"detail": "deleted"}
+
+
+@app.patch("/stock/par-level/{item_id}", response_model=StockItemResponse)
+def update_par_level(
+    item_id: int,
+    payload: ParLevelUpdateRequest,
+    current_user=Depends(auth.require_role("warehouse")),
+    db: Session = Depends(get_db),
+):
+    item = (
+        db.query(StockItem)
+        .filter(
+            StockItem.id == item_id,
+            StockItem.company_id == current_user.company_id,
+            StockItem.is_deleted == False,
+        )
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item.par_level = payload.par_level
+    db.add(
+        StockHistory(
+            stock_item=item,
+            user_id=current_user.id,
+            company_id=current_user.company_id,
+            action="set_par_level",
+        )
+    )
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@app.get("/stock/warnings", response_model=list[StockItemResponse])
+def stock_warnings(
+    current_user=Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    items = (
+        db.query(StockItem)
+        .filter(
+            StockItem.company_id == current_user.company_id,
+            StockItem.is_deleted == False,
+            StockItem.is_faulty == False,
+            StockItem.par_level.isnot(None),
+            StockItem.quantity < StockItem.par_level,
+        )
+        .all()
+    )
+    return items
 
 
 @app.get("/stock", response_model=list[StockItemResponse])
