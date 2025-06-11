@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from . import auth
 from .database import Base, engine, get_db
@@ -79,22 +79,34 @@ def add_stock(
     )
     if item:
         item.quantity += payload.quantity
+        if payload.par_level is not None:
+            item.par_level = payload.par_level
+        db.add(
+            StockHistory(
+                stock_item=item,
+                user_id=current_user.id,
+                company_id=current_user.company_id,
+                action="add",
+            )
+        )
     else:
         item = StockItem(
             name=payload.name,
             quantity=payload.quantity,
             department_id=payload.department_id,
             company_id=current_user.company_id,
+            par_level=payload.par_level,
         )
         db.add(item)
-    db.add(
-        StockHistory(
-            stock_item=item,
-            user_id=current_user.id,
-            company_id=current_user.company_id,
-            action="add",
+        db.flush()
+        db.add(
+            StockHistory(
+                stock_item=item,
+                user_id=current_user.id,
+                company_id=current_user.company_id,
+                action="create",
+            )
         )
-    )
     db.commit()
     db.refresh(item)
     return item
@@ -112,6 +124,7 @@ def assign_stock(
             StockItem.id == payload.stock_item_id,
             StockItem.company_id == current_user.company_id,
             StockItem.is_faulty == False,
+            StockItem.is_deleted == False,
         )
         .first()
     )
@@ -155,6 +168,7 @@ def return_stock(
             Assignment.id == payload.assignment_id,
             Assignment.company_id == current_user.company_id,
             Assignment.returned_at.is_(None),
+            Assignment.stock_item.has(is_deleted=False),
         )
         .first()
     )
@@ -185,6 +199,7 @@ def mark_faulty(
         .filter(
             StockItem.id == payload.stock_item_id,
             StockItem.company_id == current_user.company_id,
+            StockItem.is_deleted == False,
         )
         .first()
     )
@@ -215,6 +230,7 @@ def transfer_stock(
             StockItem.id == payload.stock_item_id,
             StockItem.company_id == current_user.company_id,
             StockItem.is_faulty == False,
+            StockItem.is_deleted == False,
         )
         .first()
     )
@@ -226,6 +242,7 @@ def transfer_stock(
             StockItem.name == item.name,
             StockItem.department_id == payload.to_department_id,
             StockItem.company_id == current_user.company_id,
+            StockItem.is_deleted == False,
         )
         .first()
     )
@@ -253,10 +270,43 @@ def transfer_stock(
     return {"detail": "transferred"}
 
 
+@app.post("/stock/delete/{item_id}")
+def delete_stock(
+    item_id: int,
+    current_user=Depends(auth.require_role("warehouse")),
+    db: Session = Depends(get_db),
+):
+    item = (
+        db.query(StockItem)
+        .filter(
+            StockItem.id == item_id,
+            StockItem.company_id == current_user.company_id,
+            StockItem.is_deleted == False,
+        )
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item.is_deleted = True
+    db.add(
+        StockHistory(
+            stock_item=item,
+            user_id=current_user.id,
+            company_id=current_user.company_id,
+            action="delete",
+        )
+    )
+    db.commit()
+    return {"detail": "deleted"}
+
+
 @app.get("/stock", response_model=list[StockItemResponse])
 def view_stock(
     department_id: int | None = None,
     user_id: int | None = None,
+    below_par: bool | None = None,
+    older_than_days: int | None = None,
+    status: str | None = None,
     current_user=Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -268,13 +318,26 @@ def view_stock(
                 Assignment.assignee_user_id == user_id,
                 Assignment.returned_at.is_(None),
                 Assignment.company_id == current_user.company_id,
+                StockItem.is_deleted == False,
             )
             .all()
         )
         return [a.stock_item for a in assignments]
-    q = db.query(StockItem).filter(StockItem.company_id == current_user.company_id)
+    q = db.query(StockItem).filter(
+        StockItem.company_id == current_user.company_id,
+        StockItem.is_deleted == False,
+    )
     if department_id is not None:
         q = q.filter(StockItem.department_id == department_id)
+    if below_par:
+        q = q.filter(StockItem.par_level.isnot(None)).filter(StockItem.quantity < StockItem.par_level)
+    if older_than_days is not None:
+        cutoff = datetime.utcnow() - timedelta(days=older_than_days)
+        q = q.filter(StockItem.created_at < cutoff)
+    if status == "faulty":
+        q = q.filter(StockItem.is_faulty == True)
+    elif status == "ok":
+        q = q.filter(StockItem.is_faulty == False)
     return q.all()
 
 
@@ -294,3 +357,25 @@ def stock_history(
         .all()
     )
     return history
+
+
+@app.get("/audit/logs", response_model=list[StockHistoryResponse])
+def audit_logs(
+    item_id: int | None = None,
+    user_id: int | None = None,
+    department_id: int | None = None,
+    current_user=Depends(auth.require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    q = (
+        db.query(StockHistory)
+        .join(StockItem)
+        .filter(StockHistory.company_id == current_user.company_id)
+    )
+    if item_id is not None:
+        q = q.filter(StockHistory.stock_item_id == item_id)
+    if user_id is not None:
+        q = q.filter(StockHistory.user_id == user_id)
+    if department_id is not None:
+        q = q.filter(StockItem.department_id == department_id)
+    return q.order_by(StockHistory.timestamp.desc()).all()
