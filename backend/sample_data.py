@@ -1,6 +1,7 @@
 from app.database import Base, engine, SessionLocal
 from app.models import Company, Department, Role, User, StockItem
 from app.auth import get_password_hash
+from datetime import datetime
 
 
 def init_db():
@@ -52,6 +53,7 @@ def init_db():
         quantity=5,
         department_id=warehouse.id,
         company_id=company.id,
+        acquired_at=datetime.utcnow(),
         par_level=2,
     )
     phone = StockItem(
@@ -59,6 +61,7 @@ def init_db():
         quantity=3,
         department_id=it.id,
         company_id=company.id,
+        acquired_at=datetime.utcnow(),
         par_level=2,
     )
     db.add_all([laptop, phone])

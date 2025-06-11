@@ -95,6 +95,7 @@ def add_stock(
             quantity=payload.quantity,
             department_id=payload.department_id,
             company_id=current_user.company_id,
+            acquired_at=datetime.utcnow(),
             par_level=payload.par_level,
         )
         db.add(item)
@@ -333,7 +334,7 @@ def view_stock(
         q = q.filter(StockItem.par_level.isnot(None)).filter(StockItem.quantity < StockItem.par_level)
     if older_than_days is not None:
         cutoff = datetime.utcnow() - timedelta(days=older_than_days)
-        q = q.filter(StockItem.created_at < cutoff)
+        q = q.filter(StockItem.acquired_at < cutoff)
     if status == "faulty":
         q = q.filter(StockItem.is_faulty == True)
     elif status == "ok":
