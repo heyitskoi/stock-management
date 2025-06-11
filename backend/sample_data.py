@@ -1,5 +1,5 @@
 from app.database import Base, engine, SessionLocal
-from app.models import Company, Department, Role, User
+from app.models import Company, Department, Role, User, StockItem
 from app.auth import get_password_hash
 
 
@@ -45,6 +45,21 @@ def init_db():
         company_id=company.id,
     )
     db.add_all([admin, worker, tech])
+
+    # Create sample stock items
+    laptop = StockItem(
+        name="Laptop",
+        quantity=5,
+        department_id=warehouse.id,
+        company_id=company.id,
+    )
+    phone = StockItem(
+        name="Phone",
+        quantity=3,
+        department_id=it.id,
+        company_id=company.id,
+    )
+    db.add_all([laptop, phone])
 
     db.commit()
     db.close()
