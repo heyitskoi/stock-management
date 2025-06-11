@@ -1,5 +1,15 @@
 import { AuthManager } from './auth'
 import { ApiError } from './errorHandler'
+import type {
+  UserOption,
+  MyEquipmentItem,
+  AuditLogsResponse,
+  AuditLogsFilters,
+  Department,
+  AssignStockRequest,
+  ReturnItemRequest,
+  MarkFaultyRequest,
+} from '@/types/stock'
 
 class ApiClient {
   private baseURL: string
@@ -51,3 +61,55 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient()
+
+export const stockApi = {
+  async getUsers() {
+    return apiClient.request<UserOption[]>("/users")
+  },
+
+  async getDepartments() {
+    return apiClient.request<Department[]>("/departments")
+  },
+
+  async getMyEquipment() {
+    return apiClient.request<MyEquipmentItem[]>("/my-equipment")
+  },
+
+  async getAuditLogs(filters: AuditLogsFilters = {}) {
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== "") {
+        params.append(key, String(value))
+      }
+    }
+    const query = params.toString()
+    return apiClient.request<AuditLogsResponse>(`/audit/logs${query ? `?${query}` : ""}`)
+  },
+
+  async assignStock(payload: AssignStockRequest) {
+    return apiClient.request("/stock/assign", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async returnItem(payload: ReturnItemRequest) {
+    return apiClient.request("/stock/return", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async markFaulty(payload: MarkFaultyRequest) {
+    return apiClient.request("/stock/faulty", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async deleteStock(id: number) {
+    return apiClient.request(`/stock/delete/${id}`, {
+      method: "POST",
+    })
+  },
+}
