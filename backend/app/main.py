@@ -89,6 +89,7 @@ def add_stock(
                 user_id=current_user.id,
                 company_id=current_user.company_id,
                 action="add",
+                reason=payload.reason,
             )
         )
     else:
@@ -107,6 +108,7 @@ def add_stock(
                 user_id=current_user.id,
                 company_id=current_user.company_id,
                 action="create",
+                reason=payload.reason,
             )
         )
     db.commit()
@@ -152,6 +154,7 @@ def assign_stock(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="assign",
+            reason=payload.reason,
         )
     )
     db.commit()
@@ -184,6 +187,7 @@ def return_stock(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="return",
+            reason=payload.reason,
         )
     )
     db.commit()
@@ -214,6 +218,7 @@ def mark_faulty(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="faulty",
+            reason=payload.reason,
         )
     )
     db.commit()
@@ -266,6 +271,7 @@ def transfer_stock(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="transfer",
+            reason=payload.reason,
         )
     )
     db.commit()
@@ -275,6 +281,7 @@ def transfer_stock(
 @app.post("/stock/delete/{item_id}")
 def delete_stock(
     item_id: int,
+    reason: str | None = None,
     current_user=Depends(auth.require_role("warehouse")),
     db: Session = Depends(get_db),
 ):
@@ -296,6 +303,7 @@ def delete_stock(
             user_id=current_user.id,
             company_id=current_user.company_id,
             action="delete",
+            reason=reason,
         )
     )
     db.commit()
