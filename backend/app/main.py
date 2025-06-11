@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from . import auth
 from .database import Base, engine, get_db
 from .models import Department, StockItem, StockHistory, Assignment, User
+from .audit import router as audit_router
 from .schemas import (
     StockAddRequest,
     StockAssignRequest,
@@ -18,6 +19,7 @@ from .schemas import (
 )
 
 app = FastAPI(title="Stock Management System")
+app.include_router(audit_router)
 
 
 @app.on_event("startup")
@@ -359,23 +361,3 @@ def stock_history(
     return history
 
 
-@app.get("/audit/logs", response_model=list[StockHistoryResponse])
-def audit_logs(
-    item_id: int | None = None,
-    user_id: int | None = None,
-    department_id: int | None = None,
-    current_user=Depends(auth.require_role("admin")),
-    db: Session = Depends(get_db),
-):
-    q = (
-        db.query(StockHistory)
-        .join(StockItem)
-        .filter(StockHistory.company_id == current_user.company_id)
-    )
-    if item_id is not None:
-        q = q.filter(StockHistory.stock_item_id == item_id)
-    if user_id is not None:
-        q = q.filter(StockHistory.user_id == user_id)
-    if department_id is not None:
-        q = q.filter(StockItem.department_id == department_id)
-    return q.order_by(StockHistory.timestamp.desc()).all()
