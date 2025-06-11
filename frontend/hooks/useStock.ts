@@ -1,30 +1,32 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import type { StockItem } from "@/types/stock"
-import { stockApi } from "@/lib/api"
+'use client'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import type { StockItem, AssignStockRequest } from '@/types/stock'
+import { apiClient } from '@/lib/api'
+import { queryClient } from '@/lib/queryClient'
 
 export function useStock(departmentId?: number) {
-  const [stock, setStock] = useState<StockItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  return useQuery({
+    queryKey: ['stock', departmentId],
+    queryFn: async (): Promise<StockItem[]> => {
+      const query = departmentId ? `?department_id=${departmentId}` : ''
+      return apiClient.request(`/stock${query}`, { method: 'GET' })
+    },
+    enabled: departmentId === undefined || !!departmentId,
+    staleTime: 2 * 60 * 1000,
+  })
+}
 
-  const fetchStock = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await stockApi.getStock(departmentId)
-      setStock(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch stock")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchStock()
-  }, [departmentId])
-
-  return { stock, loading, error, refetch: fetchStock }
+export function useAssignStock() {
+  return useMutation({
+    mutationFn: (data: AssignStockRequest) =>
+      apiClient.request('/stock/assign', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['stock'])
+      queryClient.invalidateQueries(['equipment'])
+      queryClient.invalidateQueries(['audit-logs'])
+    },
+  })
 }
