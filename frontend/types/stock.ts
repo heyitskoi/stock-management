@@ -1,4 +1,18 @@
-import type React from "react"
+import type React from 'react'
+
+export interface User {
+  id: number
+  username: string
+  email: string
+  roles: string[]
+  department_id?: number
+  department_name?: string
+  full_name?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface StockItem {
   id: number
   name: string
@@ -7,25 +21,24 @@ export interface StockItem {
   age_in_days: number
   below_par: boolean
   department_id: number
-  assigned_to?: string
-  status: "available" | "assigned" | "faulty" | "deleted"
+  status: 'available' | 'assigned' | 'faulty' | 'deleted'
+  category_id?: number
+  category_name?: string
+  serial_number?: string
   created_at: string
   updated_at: string
+}
+
+export interface ReturnItemRequest {
+  item_id: number
+  reason: string
+  condition: 'good' | 'damaged' | 'lost'
 }
 
 export interface Department {
   id: number
   name: string
   tenant_id: number
-}
-
-export interface User {
-  id: number
-  username: string
-  email: string
-  roles: string[] // Changed to array of roles
-  department_id?: number
-  full_name?: string
 }
 
 export interface AssignStockRequest {
@@ -61,7 +74,7 @@ export interface UserOption {
 export interface AuditLog {
   id: number
   timestamp: string
-  action: "assign" | "return" | "delete" | "mark_faulty" | "transfer" | "add_stock" | "update_par_level"
+  action: 'assign' | 'return' | 'delete' | 'mark_faulty' | 'transfer' | 'add_stock' | 'update_par_level'
   reason?: string
   stock_item_id: number
   stock_item_name?: string

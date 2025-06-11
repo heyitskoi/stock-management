@@ -111,4 +111,13 @@ The goal is to:
    npm run dev
    ```
 
+The frontend expects the following environment variables (see `.env.example`):
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
+NEXT_PUBLIC_APP_NAME=Stock Management System
+NEXT_PUBLIC_VERSION=1.0.0
+```
+
 This project uses SQLite for convenience during development but is designed to work with PostgreSQL in production.
