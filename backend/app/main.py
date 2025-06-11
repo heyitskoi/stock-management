@@ -343,6 +343,25 @@ def view_stock(
     return q.all()
 
 
+@app.get("/my-equipment", response_model=list[StockItemResponse])
+def my_equipment(
+    current_user=Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    assignments = (
+        db.query(Assignment)
+        .join(StockItem)
+        .filter(
+            Assignment.assignee_user_id == current_user.id,
+            Assignment.returned_at.is_(None),
+            Assignment.company_id == current_user.company_id,
+            StockItem.is_deleted == False,
+        )
+        .all()
+    )
+    return [a.stock_item for a in assignments]
+
+
 @app.get("/stock/history/{item_id}", response_model=list[StockHistoryResponse])
 def stock_history(
     item_id: int,
