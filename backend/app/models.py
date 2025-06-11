@@ -64,6 +64,7 @@ class StockHistory(Base):
     stock_item_id = Column(Integer, ForeignKey("stock_items.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
     action = Column(String)
+    reason = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     company_id = Column(Integer, ForeignKey("companies.id"), index=True)
 
