@@ -54,6 +54,7 @@ The goal is to:
 - **Aging assets** can be tracked by acquisition date.
 - Staff can be assigned specific equipment (e.g., laptops, phones) with full responsibility trail.
 - Reports can be filtered by par levels, age, and faulty status.
+- Users can see their currently issued equipment via `/my-equipment`.
 
 ---
 
