@@ -51,11 +51,19 @@ class StockItem(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), index=True)
     is_faulty = Column(Boolean, default=False)
     par_level = Column(Integer, nullable=True)
+    acquired_at = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
     is_deleted = Column(Boolean, default=False)
 
     department = relationship("Department")
     company = relationship("Company")
+
+    @property
+    def age_in_days(self) -> int:
+        """Return the age of the item in whole days."""
+        if not self.acquired_at:
+            return 0
+        return (datetime.utcnow() - self.acquired_at).days
 
     @property
     def below_par(self) -> bool:

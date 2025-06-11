@@ -51,6 +51,11 @@ def upgrade() -> None:
     sa.Column('quantity', sa.Integer(), nullable=True),
     sa.Column('department_id', sa.Integer(), nullable=True),
     sa.Column('company_id', sa.Integer(), nullable=True),
+    sa.Column('is_faulty', sa.Boolean(), nullable=True),
+    sa.Column('par_level', sa.Integer(), nullable=True),
+    sa.Column('acquired_at', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['company_id'], ['companies.id'], ),
     sa.ForeignKeyConstraint(['department_id'], ['departments.id'], ),
     sa.PrimaryKeyConstraint('id')

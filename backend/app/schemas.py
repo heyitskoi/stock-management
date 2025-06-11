@@ -38,6 +38,8 @@ class StockItemResponse(BaseModel):
     department_id: int
     is_faulty: bool
     par_level: Optional[int] = None
+    acquired_at: datetime
+    age_in_days: int
     created_at: datetime
     below_par: bool
 
